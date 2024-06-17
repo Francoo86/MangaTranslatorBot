@@ -1,1 +1,8 @@
 node_modules/
+
+# all the stuff to be ignored
+.env
+.env.local
+
+.vscode/
+.idea/
