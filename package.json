@@ -1,0 +1,21 @@
+{
+  "name": "mangatranslatorbot",
+  "version": "1.0.0",
+  "description": "Discord bot for demonstrating the paper.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "MangaTranslatorBot"
+  },
+  "keywords": [
+    "ai",
+    "bot",
+    "discord",
+    "discord-bot"
+  ],
+  "author": "Francoo86",
+  "license": "ISC"
+}
