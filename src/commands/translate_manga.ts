@@ -1,10 +1,12 @@
 import { config } from "../config";
 import axios from "axios";
-import { Attachment, CommandInteraction, SlashCommandBuilder } from "discord.js";
+import { Attachment, CommandInteraction, SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { LANG_MAP } from "../translate_params/lang";
+import { TRANSLATORS } from "../translate_params/translators";
 
 const URL = config.API_URL;
 const RUN_ENDPOINT = "/run";
+const RESULT_ENDPOINT = "/result";
 
 export const data = new SlashCommandBuilder()
   .setName("translate_manga")
@@ -19,7 +21,39 @@ export const data = new SlashCommandBuilder()
           .setDescription('The language to translate to')
           .setRequired(true)
           .addChoices(...LANG_MAP)
-  );
+  )
+  .addStringOption(option => 
+    option.setName('translator')
+    .setDescription('The translator to use')
+    .setRequired(true)
+    .addChoices(...TRANSLATORS)
+  )
+  ;
+
+
+async function loadResult(interaction : CommandInteraction, taskId: string) {
+  const response = await axios.get(`${URL}${RESULT_ENDPOINT}/${taskId}`);
+  //considering response.data should be an image
+  const image = response.data;
+  const embed = new EmbedBuilder();
+  const lang = interaction.options.get('language')?.name ?? "Unknown";
+  const translator = interaction.options.get('translator')?.name ?? "Unknown";
+
+  embed.setTitle("Translated Image")
+    .setDescription("Translate image in the language you requested")
+    .addFields(
+      { name: 'Language', value: lang},
+      { name: 'Translator', value: translator},
+      { name: 'Task ID', value: taskId},
+    )
+    .setTimestamp()
+    .setImage(image);
+    
+  //embed it in the message
+  return await interaction.editReply({
+    embeds: [embed]
+  });
+}
 
 export async function execute(interaction: CommandInteraction) {
   await interaction.deferReply();
@@ -63,7 +97,8 @@ export async function execute(interaction: CommandInteraction) {
     // Handle the response from the API
     if (response.status === 200) {
       console.log('Response from API:', response.data);
-      return await interaction.editReply("Image and language sent successfully!");
+      return await loadResult(interaction, response.data.task_id);
+      //return await interaction.editReply("Image and language sent successfully!");
     } else {
       console.log(`Failed to send image and language: ${response.statusText}`);
       return await interaction.editReply(`Failed to send image and language: ${response.statusText}`);
