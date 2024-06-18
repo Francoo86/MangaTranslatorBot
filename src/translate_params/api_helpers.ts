@@ -26,8 +26,6 @@ async function loadResult(interaction : CommandInteraction, taskId: string) {
     const translator = (interaction.options.get('translator')?.value as string) ?? "Unknown";
     const langName = getLanguageName(lang);
     
-    console.log(`Image URL: ${image}`)
-    
     embed.setTitle("Translated Image")
         .setDescription("Translate image in the language you requested")
         .addFields(
