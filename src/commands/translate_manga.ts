@@ -1,12 +1,12 @@
 import { config } from "../config";
 import axios from "axios";
-import { Attachment, CommandInteraction, SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import { Attachment, CommandInteraction, SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } from "discord.js";
 import { LANG_MAP } from "../translate_params/lang";
 import { TRANSLATORS } from "../translate_params/translators";
+import {loadResult} from "../translate_params/api_helpers";
 
 const URL = config.API_URL;
 const RUN_ENDPOINT = "/run";
-const RESULT_ENDPOINT = "/result";
 
 export const data = new SlashCommandBuilder()
   .setName("translate_manga")
@@ -29,31 +29,6 @@ export const data = new SlashCommandBuilder()
     .addChoices(...TRANSLATORS)
   )
   ;
-
-
-async function loadResult(interaction : CommandInteraction, taskId: string) {
-  const response = await axios.get(`${URL}${RESULT_ENDPOINT}/${taskId}`);
-  //considering response.data should be an image
-  const image = response.data;
-  const embed = new EmbedBuilder();
-  const lang = interaction.options.get('language')?.name ?? "Unknown";
-  const translator = interaction.options.get('translator')?.name ?? "Unknown";
-
-  embed.setTitle("Translated Image")
-    .setDescription("Translate image in the language you requested")
-    .addFields(
-      { name: 'Language', value: lang},
-      { name: 'Translator', value: translator},
-      { name: 'Task ID', value: taskId},
-    )
-    .setTimestamp()
-    .setImage(image);
-    
-  //embed it in the message
-  return await interaction.editReply({
-    embeds: [embed]
-  });
-}
 
 export async function execute(interaction: CommandInteraction) {
   await interaction.deferReply();
