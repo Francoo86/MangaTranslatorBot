@@ -45,44 +45,70 @@ function getTranslatorName(value : string) : string {
     return getNameBasedOnValue(value, TRANSLATORS);
 }
 
-async function loadResult(interaction : CommandInteraction, taskId : string) {
-    try {
-      const response = await axios.get(`${API_URL}${RESULT_ENDPOINT}/${taskId}`, {
+const STATUS_ENDPOINT = "/task-state";
+
+async function loadResult(interaction: CommandInteraction, taskId: string) {
+  try {
+    let finishedTask : boolean = false;
+    let response;
+
+    console.log(`Checking status of task ${taskId}`);
+    
+    // Polling loop
+    while (finishedTask === false) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      console.log(`Checking status of task ${taskId}`);
+
+      response = await axios.get(`${API_URL}${STATUS_ENDPOINT}?taskid=${taskId}`);
+      const {state, finished, waiting } = response.data;
+
+      console.log(`Task state: ${state}, finished: ${finished}, queued tasks: ${waiting}`);
+
+      finishedTask = finished;
+    }
+
+    if (finishedTask === true) {
+      // Fetch the result
+      response = await axios.get(`${API_URL}${RESULT_ENDPOINT}/${taskId}`, {
         responseType: 'arraybuffer'
       });
-      
+
       const imageBuffer = Buffer.from(response.data, 'binary');
       const imageAttachment = new AttachmentBuilder(imageBuffer, { name: 'translated-image.png' });
-  
+
       const lang = (interaction.options.get('language')?.value as string) ?? "Unknown";
       const translator = (interaction.options.get('translator')?.value as string) ?? "Unknown";
 
       const langName = getLanguageName(lang);
       const translatorName = getTranslatorName(translator);
-  
+
       const embed = new EmbedBuilder()
-      .setColor(ARONA_COLOR)
+        .setColor(ARONA_COLOR)
         .setTitle("AronaTranslator")
         .setDescription("Translation complete! Check out the translated panel below.")
         .addFields(
-          { name: 'Language', value: langName, inline: true},
-          { name: 'Translator', value: translatorName, inline: true},
+          { name: 'Language', value: langName, inline: true },
+          { name: 'Translator', value: translatorName, inline: true },
           { name: 'Task ID', value: taskId }
         )
         .setTimestamp()
         .setImage('attachment://translated-image.png');
-  
+
       // Embed it in the message
       return await interaction.editReply({
         embeds: [embed],
-        files: [imageAttachment] // Include the attachment in the editReply call
+        files: [imageAttachment]
       });
-    } catch (error) {
-      console.error('Error fetching the image:', error);
-      return await interaction.editReply({
-        content: 'There was an error fetching the image. Please try again later. :(',
-      });
+    } else {
+      console.log(`Task failed with finished: ${finishedTask}`);
+      return await interaction.editReply(`Task failed with finished: ${finishedTask}`);
     }
+  } catch (error) {
+    console.error('Error fetching the image:', error);
+    return await interaction.editReply({
+      content: 'There was an error fetching the image. Please try again later. :(',
+    });
   }
+}
 
 export { loadResult, tryToGetImageUrl}
